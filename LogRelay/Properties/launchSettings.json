@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "LogRelay": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ElasticSearchIndex": "salontrackerapp-*",
+        "ElasticSearchUrl": "http://logs.salontracker.co.uk:9200"
+      }
+    }
+  }
+}
