@@ -16,17 +16,18 @@ namespace LogRelay
 {
     public static class LogIt
     {
+        private static ElasticLowLevelClient _client = null;
+
+        private static ElasticLowLevelClient Client => (_client ?? (_client = new ElasticLowLevelClient(new ConnectionConfiguration(new Uri(Environment.GetEnvironmentVariable("ElasticSearchUrl"))))));
+
         [FunctionName("LogIt")]
         public static IActionResult Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]HttpRequest req, TraceWriter log)
         {
-            string url = Environment.GetEnvironmentVariable("ElasticSearchUrl");
             string index = Environment.GetEnvironmentVariable("ElasticSearchIndex");
 
-            if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(index))
+            if (string.IsNullOrWhiteSpace(index))
                 return new InternalServerErrorResult();
-
-            var client = new ElasticLowLevelClient(new ConnectionConfiguration(new Uri(url)));
-
+            
             string requestBody = new StreamReader(req.Body).ReadToEnd();
 
             dynamic obj = JsonConvert.DeserializeObject(requestBody);
@@ -37,11 +38,13 @@ namespace LogRelay
 
             foreach (var message in obj)
             {
-                var resp = client.CreatePost<DynamicResponse>(index, "log", Guid.NewGuid().ToString(), message.ToString());
+                var resp = Client.CreatePost<DynamicResponse>(index, "log", Guid.NewGuid().ToString(),
+                    message.ToString());
                 codes.Add(resp.HttpStatusCode ?? 0);
             }
 
             return new OkObjectResult(codes);
         }
+        
     }
 }
